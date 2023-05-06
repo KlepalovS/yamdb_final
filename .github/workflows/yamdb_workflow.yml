@@ -41,7 +41,8 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         push: true
-        tags: slavaklepalov/api_yamdb:v06.05.2023
+        run: cd api_yamdb/
+        tags: slavaklepalov/api_yamdb:latest
   deploy:
     runs-on: ubuntu-latest
     needs: build_and_push_to_docker_hub
