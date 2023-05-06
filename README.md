@@ -1,4 +1,4 @@
-https://github.com/KlepalovS/yamdb_final/actions/workflows/yamdb_workflow.yml/badge.svg
+![workflow](https://github.com/KlepalovS/yamdb_final/actions/workflows/yamdb_workflow.yml/badge.svg)
 
 # YaMDb (api v1). Упакован в Docker контейнеры.
 ## _Приложение собирает и хранит отзывы пользователей на произведения разных категорий, будь то книги или музыка,_ _фильмы или картины художников._
