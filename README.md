@@ -1,5 +1,5 @@
 ![workflow](https://github.com/KlepalovS/yamdb_final/actions/workflows/yamdb_workflow.yml/badge.svg)
-# YaMDb (api v1). Упакован в Docker контейнеры.
+# YaMDb (api v1).
 ## _Приложение собирает и хранит отзывы пользователей на произведения разных категорий, будь то книги или музыка,_ _фильмы или картины художников._
 
 ![alt text](https://sun1-85.userapi.com/CP3yKltGc5S20BLv2tOIcUr_2TRmwEMGo_bVKA/6DWs-SsdSmo.jpg)
@@ -16,6 +16,8 @@
 
 - Самостоятельная регистрация новых пользователей через POST запрос, после чего сервис YaMDB отправляет письмо с кодом подтверждения на указанный адрес e-mail.
 - Для обновления access-токена не нужно применять refresh-токен и дополнительный эндпоинт. Токен обновляется через повторную передачу username и кода подтверждения.
+- Упакован в Docker контейнеры.
+- Настроены CI/CD с применением GitHub Actions и автоматическим развертыванием на боевом сервере Яндекс.Облака.
 
 ## Технологии
 
@@ -27,6 +29,8 @@
 - [Nginx](https://nginx.org/ru/) - HTTP-сервер и обратный прокси-сервер, почтовый прокси-сервер, а также TCP/UDP прокси-сервер общего назначения.
 - [PostgreSQL](https://www.postgresql.org) - свободная объектно-реляционная система управления базами данных.
 - [Gunicorn](https://gunicorn.org) - HTTP-сервер с интерфейсом шлюза веб-сервера Python.
+- [Яндекс.Облако](https://cloud.yandex.ru/) - публичная облачная платформа от российской интернет-компании «Яндекс». Yandex.Cloud предоставляет частным и корпоративным пользователям инфраструктуру и вычислительные ресурсы в формате as a service.
+- [GitHub Actions](https://docs.github.com/ru/actions) - это облачный сервис, инструмент для автоматизации процессов тестирования и деплоя ваших проектов. Он служит тестовой площадкой, на которой можно запускать и тестировать проекты в изолированном окружении. 
 
 ##### Команда разработки:
 
@@ -37,7 +41,7 @@
 ## Инструкция по развертыванию проекта.
 
 Проект упакован в три контейнера: nginx, PostgreSQL, gunicorn + Django.
-Фикстураы тестовой базы данных представлена в файле test_db.json.
+Фикстуры тестовой базы данных представлена в файле test_db.json.
 
 Клонировать репозиторий и перейти в него в командной строке.
 
@@ -72,15 +76,23 @@ docker-compose exec web python manage.py shell
 from django.core.management.utils import get_random_secret_key
 get_random_secret_key()
 ```
+Переменные режима работы сервера.
+```
+DEBAG='False'
+```
+Разрешенные хосты для подключения.
+```
+ALLOWED_HOSTS='*'
+```
 Переменные для настройки БД PostgreSQL в Джанго.
 Движок БД. ENGINE в settings.py DATABASES.
 ```
-DB_ENGINE=django.db.backends.postgresql
+DB_ENGINE='django.db.backends.postgresql'
 ```
 Задаем имя БД.
 NAME в settings.py DATABASES.
 ```
-DB_NAME=postgres
+DB_NAME='postgres'
 ```
 Можно сменить БД на новую, прежде создав ее (контейнер запущен).
 Далее меняем в .env файле.
@@ -91,8 +103,8 @@ CREATE DATABASE <db_name>
 Задаем имя пользователя БД и пароль для этого юзера.
 USER и PASSWORD в settings.py DATABASES (Не используется с SQLite).
 ```
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres1
+POSTGRES_USER='postgres'
+POSTGRES_PASSWORD='postgres1'
 ```
 Можно сменить на нового, прежде создав его и дав все разрешения
 для работы с БД (контейнер запущен).
@@ -106,14 +118,14 @@ GRANT ALL PRIVILEGES ON DATABASE <db_name> TO <username>;
 HOST и PORTв settings.py DATABASES(Не используется с SQLite).
 Имя хоста в нашем случае совпадает с названием контейнера с БД.
 ```
-DB_HOST=db
-DB_PORT=5432
+DB_HOST='db'
+DB_PORT='5432'
 ```
 
 Запускаем производим развертывание инфраструктуры.
 
 ```
-docker-compose up
+docker-compose up -d
 ```
 
 Применяем миграции, создаем суперюзера и собираем статику в контейнере web.
@@ -137,6 +149,15 @@ docker-compose exec web python manage.py loaddata test_db.json
 ```
 docker-compose down -v
 ```
+
+## Инструкция для CI/CD находится в файле yamdb_workflow.
+
+При пуше в ветку master последовательно запускаются четыре задачи (jobs):
+
+- Tests - тестирование проекта на соответствие PEP8 и локальным тестам. Задействуем модуль actions/setup-python@v2 для запуска пакетов python. 
+- Build_and_push_to_docker_hub - создается образ докер контейнера и отправляется в репозиторий докерхаба. Задействуем модуль docker/setup-buildx-action@v1 для сборки Docker образов, docker/login-action@v1 для установки соединения с DockerHub, docker/build-push-action@v2 для отправки собранного образа в репозиторий DockerHub.
+- Deploy - развертывание проекта на боевом сервере Яндекс.Облака. Задействуем модуль appleboy/ssh-action@master для инициализации подключения по SSH и выполнения скрипта.
+- Send_message - отправка сообщения в тг об успешном выполнении workflow. Задействуем модуль appleboy/telegram-action@master.
 
 ## Примеры работы
 

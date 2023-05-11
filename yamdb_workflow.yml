@@ -1,6 +1,9 @@
 name: YaMDB workflow
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   tests:
@@ -40,8 +43,9 @@ jobs:
     - name: Push to Docker Hub
       uses: docker/build-push-action@v2
       with:
+        context: ./api_yamdb/
         push: true
-        tags: slavaklepalov/api_yamdb:latest
+        tags: ${{ secrets.DOCKER_USERNAME }}/api_yamdb:latest
   deploy:
     runs-on: ubuntu-latest
     needs: build_and_push_to_docker_hub
@@ -54,9 +58,22 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         passphrase: ${{ secrets.PASSPHRASE }}
         script: |
-          sudo docker pull slavaklepalov/infra_actions
-          sudo docker stop $(sudo docker ps -a -q)
-          sudo docker run --rm -d -p 5001:5001 slavaklepalov/infra_actions
+          sudo docker-compose stop
+          sudo docker-compose rm web
+          touch .env
+          echo SECRET_KEY=${{ secrets.SECRET_KEY }} >> .env
+          echo SECRET_KEY=${{ secrets.DEBUG }} >> .env
+          echo SECRET_KEY=${{ secrets.ALLOWED_HOSTS }} >> .env
+          echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
+          echo DB_NAME=${{ secrets.DB_NAME }} >> .env
+          echo POSTGRES_USER=${{ secrets.POSTGRES_USER }} >> .env
+          echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} >> .env
+          echo DB_HOST=${{ secrets.DB_HOST }} >> .env
+          echo DB_PORT=${{ secrets.DB_PORT }} >> .env
+          sudo docker-compose up -d
+          sudo docker-compose exec -T web python manage.py makemigrations reviews
+          sudo docker-compose exec -T web python manage.py migrate
+          sudo docker-compose exec -T web python manage.py collectstatic --no-input
   send_message:
     runs-on: ubuntu-latest
     needs: deploy
