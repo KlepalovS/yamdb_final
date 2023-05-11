@@ -136,11 +136,9 @@ docker-compose exec web python manage.py createsuperuser
 docker-compose exec web python manage.py collectstatic --no-input 
 ```
 
-Наполняем БД из фикстур. 
-Для этого копируем фикстуры на сервер и выполняем загрузку в БД.
+Наполняем БД из фикстур.
 
 ```
-docker-compose cp ./test_db.json web:app/
 docker-compose exec web python manage.py loaddata test_db.json
 ```
 
