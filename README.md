@@ -82,7 +82,7 @@ DEBAG='False'
 ```
 Разрешенные хосты для подключения.
 ```
-ALLOWED_HOSTS='*'
+ALLOWED_HOSTS='localhost'
 ```
 Переменные для настройки БД PostgreSQL в Джанго.
 Движок БД. ENGINE в settings.py DATABASES.
